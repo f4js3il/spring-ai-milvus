@@ -31,25 +31,17 @@ public class OpenAIServiceImpl implements OpenAIService {
     @Value("classpath:/templates/rag-prompt-template.st")
     private Resource ragPromptTemplate;
 
-    @Value("classpath:/templates/system-message.st")
-    private Resource systemMessageTemplate;
 
     @Override
     public Answer getAnswer(Question question) {
-        PromptTemplate systemMessagePromptTemplate = new PromptTemplate(systemMessageTemplate);
-        Message systemMessage = systemMessagePromptTemplate.createMessage();
-
-
-
         List<Document> documents = vectorStore.similaritySearch(SearchRequest.builder()
                 .query(question.question()).topK(5).build());
         List<String> contentList = documents.stream().map(Document::getContent).toList();
 
         PromptTemplate promptTemplate = new PromptTemplate(ragPromptTemplate);
         Message userMessage = promptTemplate.createMessage(Map.of("input", question.question(), "documents",
-                String.join("\n", contentList)));
-
-        ChatResponse response = chatModel.call(new Prompt(List.of(systemMessage, userMessage)));
+                String.join("\n", contentList)));;
+        ChatResponse response = chatModel.call(new Prompt(List.of(userMessage)));
 
         return new Answer(response.getResult().getOutput().getContent());
     }
